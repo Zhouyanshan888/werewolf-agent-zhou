@@ -1,0 +1,5 @@
+agentscope>=1.0.0
+numpy>=1.24.0
+fastapi
+uvicorn
+asyncio
