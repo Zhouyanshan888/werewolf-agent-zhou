@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi.responses import PlainTextResponse
+from fastapi.responses import HTMLResponse  # 替换为HTML响应，优化排版
 import io
 import sys
 
@@ -81,24 +81,33 @@ class Game:
             output.append("\n🎉 ===== GAME OVER =====\n🏆 Werewolves win!")
         return "\n".join(output)
 
-# ========== Web服务配置（适配Vercel） ==========
-# 捕获游戏输出并返回给网页
-class CaptureOutput:
-    def __enter__(self):
-        self.old_stdout = sys.stdout
-        sys.stdout = self.buffer = io.StringIO()
-        return self
-    def __exit__(self, *args):
-        sys.stdout = self.old_stdout
-
-# Web接口：访问根路径时运行游戏并返回结果
-@app.get("/", response_class=PlainTextResponse)
+# ========== Web服务配置（适配Vercel，优化网页排版） ==========
+# Web接口：访问根路径时运行游戏并返回格式化的HTML结果
+@app.get("/", response_class=HTMLResponse)
 def root():
     # 初始化游戏并运行
     player_names = [f"Player{i}" for i in range(1, 10)]
     game = Game(player_names)
     game_result = game.run_game()
-    return game_result
+    
+    # 格式化结果：保留换行+缩进，添加基础样式让文字更清晰
+    formatted_html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>狼人杀游戏结果</title>
+        <style>
+            body {{ font-family: 'Consolas', 'Monaco', monospace; padding: 20px; background: #f8f9fa; }}
+            pre {{ font-size: 16px; line-height: 1.6; color: #2d3748; background: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+        </style>
+    </head>
+    <body>
+        <pre>{game_result}</pre>
+    </body>
+    </html>
+    """
+    return formatted_html
 
 # 本地运行Web服务（Vercel会自动处理）
 if __name__ == "__main__":
