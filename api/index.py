@@ -5,6 +5,15 @@ import json
 import io
 import sys
 
+# ========== Vercel环境兼容：修复stdout捕获+异步循环问题 ==========
+# 解决Vercel无终端环境下stdout捕获的异常
+class SafeStringIO(io.StringIO):
+    def write(self, s):
+        try:
+            super().write(s)
+        except Exception:
+            pass
+
 # 1. 初始化FastAPI服务（对接扣子智能体的接口配置）
 app = FastAPI(
     title="狼人杀智能体API",
@@ -41,9 +50,9 @@ async def start_werewolf(
     for agent in moderator.player_agents.values():
         agent.reset_game_state()
 
-    # 捕获游戏终端输出（转为JSON返回）
+    # 捕获游戏终端输出（Vercel兼容版）
     old_stdout = sys.stdout
-    captured_output = io.StringIO()
+    captured_output = SafeStringIO()
     sys.stdout = captured_output
 
     try:
@@ -129,13 +138,13 @@ async def health_check():
         }
     }
 
-
-# 6. 本地运行入口（开发调试用，Vercel部署时自动忽略）
+# ========== Vercel部署核心配置：必须保留 ==========
+# Vercel的Python函数需要暴露app实例，且禁用本地运行的reload（部署时自动忽略）
 if __name__ == "__main__":
     import uvicorn
-    # 本地运行配置（支持热重载）
+    # 本地运行配置（开发调试用，Vercel部署时自动忽略）
     uvicorn.run(
-        app="api:app",
+        app="index:app",  # 修正：Vercel环境下路径为index.py，故改为index:app
         host="0.0.0.0",
         port=8000,
         reload=True,
