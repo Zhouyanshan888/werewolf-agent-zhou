@@ -3,10 +3,7 @@
     {
       "src": "main.py",
       "use": "@vercel/python@4.0.0",
-      "config": {
-        "runtime": "python-3.11.9",
-        "args": ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80"]
-      }
+      "config": { "runtime": "python-3.11.9" }
     }
   ],
   "routes": [
