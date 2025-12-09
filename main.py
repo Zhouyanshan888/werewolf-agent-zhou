@@ -6,20 +6,24 @@ import sys
 # 初始化FastAPI应用（适配Vercel Web环境）
 app = FastAPI()
 
-# ========== 狼人杀游戏核心逻辑 ==========
+# ========== 狼人杀游戏核心逻辑（修复变量未定义问题） ==========
 class Player:
-    def __init__(self, name, role):
+    def __init__(self, name, role, game):  # 新增game参数，关联当前游戏实例
         self.name = name
         self.role = role  # "WEREWOLF", "VILLAGER", "SEER", "WITCH", "HUNTER"
         self.alive = True
         self.win_rate = 0.0
         self.high_win_targets = []
+        self.game = game  # 存储游戏实例，用于访问全局玩家列表
 
     def vote(self, target, say=""):
         if self.role == "WEREWOLF":
             return {"vote": target, "reach_agreement": True, "say": say}
         elif self.role == "SEER":
-            return {"vote": target, "check": target, "identity": "狼人" if target in [p.name for p in players if p.role == "WEREWOLF"] else "好人", "say": say}
+            # 从game实例中获取狼人列表，修复players未定义问题
+            wolves = [p.name for p in self.game.players if p.role == "WEREWOLF"]
+            identity = "狼人" if target in wolves else "好人"
+            return {"vote": target, "check": target, "identity": identity, "say": say}
         elif self.role == "WITCH":
             return {"vote": target, "resurrect": True, "poison": False, "say": say}
         elif self.role == "HUNTER":
@@ -30,7 +34,8 @@ class Player:
 class Game:
     def __init__(self, player_names):
         self.roles = ["WEREWOLF", "WEREWOLF", "WEREWOLF", "VILLAGER", "VILLAGER", "VILLAGER", "SEER", "WITCH", "HUNTER"]
-        self.players = [Player(name, role) for name, role in zip(player_names, self.roles)]
+        # 创建Player时传入self（当前游戏实例），关联到Player的game属性
+        self.players = [Player(name, role, self) for name, role in zip(player_names, self.roles)]
         self.alive_wolves = 3
         self.alive_good = 6
         self.game_results = []
@@ -49,7 +54,10 @@ class Game:
         votes = {}
         for p in self.players:
             if p.alive:
-                target = p.vote("Player2" if p.role == "WEREWOLF" else "Player7", f"之前投{target}赢过，他肯定是狼人，跟票准没错！")["vote"]
+                # 修复f-string中target变量引用问题
+                vote_target = "Player2" if p.role == "WEREWOLF" else "Player7"
+                say_content = f"之前投{vote_target}赢过，他肯定是狼人，跟票准没错！"
+                target = p.vote(vote_target, say_content)["vote"]
                 votes[target] = votes.get(target, 0) + 1
         eliminated = max(votes, key=votes.get)
         if eliminated in [p.name for p in self.players if p.role == "WEREWOLF"]:
@@ -74,6 +82,7 @@ class Game:
         return "\n".join(output)
 
 # ========== Web服务配置（适配Vercel） ==========
+# 捕获游戏输出并返回给网页
 class CaptureOutput:
     def __enter__(self):
         self.old_stdout = sys.stdout
@@ -82,14 +91,16 @@ class CaptureOutput:
     def __exit__(self, *args):
         sys.stdout = self.old_stdout
 
+# Web接口：访问根路径时运行游戏并返回结果
 @app.get("/", response_class=PlainTextResponse)
 def root():
+    # 初始化游戏并运行
     player_names = [f"Player{i}" for i in range(1, 10)]
     game = Game(player_names)
-    with CaptureOutput() as capture:
-        game_result = game.run_game()
+    game_result = game.run_game()
     return game_result
 
+# 本地运行Web服务（Vercel会自动处理）
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
