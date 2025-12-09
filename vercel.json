@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api" }
+  ],
+  "functions": {
+    "api/index.py": {
+      "memory": 1024,
+      "maxDuration": 10
+    }
+  },
+  "build": {
+    "env": {
+      "PYTHON_VERSION": "3.9"
+    }
+  }
+}
