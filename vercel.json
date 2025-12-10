@@ -1,23 +1,23 @@
 {
   "builds": [
     {
-      "src": "index.py",  // 关键：改为实际功能入口 index.py
+      "src": "index.py",
       "use": "@vercel/python",
       "config": {
-        "runtime": "python-3.11.9",  // 与 runtime.txt 版本一致
-        "maxLambdaSize": "25mb"  // 解决依赖包体积超限问题
+        "runtime": "python-3.11.9",
+        "maxLambdaSize": "25mb"
       }
     }
   ],
   "functions": {
-    "index.py": {  // 对应入口文件，设置超时时间（游戏运行可能较久）
+    "index.py": {
       "runtime": "python-3.11.9",
-      "maxDuration": 300  // Vercel 免费版最大超时 300 秒（5分钟），足够运行3局游戏
+      "maxDuration": 300
     }
   },
   "routes": [
     {
-      "src": "/(.*)",  // 所有请求转发到 index.py
+      "src": "/(.*)",
       "dest": "index.py"
     }
   ]
