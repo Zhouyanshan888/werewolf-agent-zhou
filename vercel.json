@@ -6,7 +6,16 @@
       "config": { "runtime": "python-3.11.9" }
     }
   ],
+  "functions": {
+    "main.py": {
+      "runtime": "python3.11",
+      "maxDuration": 300
+    }
+  },
   "routes": [
-    { "src": "/(.*)", "dest": "main.py" }
+    {
+      "src": "/(.*)",
+      "dest": "main.py"
+    }
   ]
 }
